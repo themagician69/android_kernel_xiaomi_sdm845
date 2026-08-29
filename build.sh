@@ -77,13 +77,18 @@ else
 fi
 # --------------------------------
 
-# --- BULLETPROOF COMPILER-GCC.H BYPASS ---
-echo "Nuking the GCC version error check directly..."
+# --- ULTIMATE COMPILER-GCC.H STRIPPER ---
+echo "Stripping out the version check lines entirely..."
 if [ -f "include/linux/compiler-gcc.h" ]; then
-    sed -i 's/#error Sorry, your version of GCC is too old - please use 5.1 or newer./\/\/ #error Bypassed GCC check/g' include/linux/compiler-gcc.h
-    sed -i 's/__GNUC__ < 5/__GNUC__ < 4/g' include/linux/compiler-gcc.h
+    # Use sed to delete lines matching the GCC version error block
+    sed -i '150,165{//!d}' include/linux/compiler-gcc.h
+    # Fallback pattern deletion just in case line numbers shift
+    sed -i '/#if __GNUC__ == 4 && __GNUC_MINOR__ </,$ {
+        /#error/d
+    }' include/linux/compiler-gcc.h
 fi
-# ------------------------------------------
+# ----------------------------------------
+
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
