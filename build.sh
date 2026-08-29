@@ -77,13 +77,13 @@ else
 fi
 # --------------------------------
 
-# --- AGGRESSIVE COMPILER-GCC.H BYPASS ---
-echo "Removing GCC version restriction block..."
+# --- BULLETPROOF COMPILER-GCC.H BYPASS ---
+echo "Nuking the GCC version error check directly..."
 if [ -f "include/linux/compiler-gcc.h" ]; then
-    sed -i '/__GNUC__ < 5/,/#endif/d' include/linux/compiler-gcc.h
-    sed -i '/#error Sorry, your version of GCC is too old/d' include/linux/compiler-gcc.h
+    sed -i 's/#error Sorry, your version of GCC is too old - please use 5.1 or newer./\/\/ #error Bypassed GCC check/g' include/linux/compiler-gcc.h
+    sed -i 's/__GNUC__ < 5/__GNUC__ < 4/g' include/linux/compiler-gcc.h
 fi
-# ----------------------------------------
+# ------------------------------------------
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
