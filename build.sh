@@ -81,6 +81,17 @@ else
 fi
 # --------------------------------
 
+# --- DISABLE BROKEN IOMMU DEBUG ---
+echo "Disabling CONFIG_IOMMU_DEBUG to fix struct dev_archdata errors..."
+if [ -f "out/.config" ]; then
+    sed -i 's/CONFIG_IOMMU_DEBUG=y/CONFIG_IOMMU_DEBUG=n/g' out/.config
+    echo "CONFIG_IOMMU_DEBUG=n" >> out/.config
+    echo "CONFIG_IOMMU_DEBUG_TRACKING=n" >> out/.config
+    PATH="${COMPILERDIR}/bin:${PATH}" make O=out ARCH=${ARCH} SUBARCH=${SUBARCH} olddefconfig
+fi
+# ----------------------------------
+
+
 # --- NATHAN CHANCELLOR STANDALONE BUILD FUNCTION ---
 Build_Standalone_Clang () {
 echo "Starting compilation using Nathan Chancellor's standalone Clang variables..."
