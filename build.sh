@@ -77,6 +77,13 @@ else
 fi
 # --------------------------------
 
+# --- BYPASS GCC VERSION CHECK (XDA FIX) ---
+echo "Applying XDA patch to bypass compiler-gcc.h version lock..."
+if [ -f "include/linux/compiler-gcc.h" ]; then
+    sed -i 's/#error Sorry, your version of GCC is too old - please use 5.1 or newer./\/\/#error Sorry, your version of GCC is too old - please use 5.1 or newer./g' include/linux/compiler-gcc.h
+fi
+# ------------------------------------------
+
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
 echo "Starting compilation using LineageOS GCC 4.9..."
