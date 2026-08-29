@@ -1,0 +1,43 @@
+name: Build Etude-KSU Kernel
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'README.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Environment Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            bc \
+            curl \
+            git \
+            unzip \
+            zip \
+            libelf-dev \
+            pkg-config \
+            flex \
+            bison
+
+      - name: Run Kernel Build Script
+        shell: bash
+        run: bash build.sh
+
+      - name: Upload Kernel Artifact (Zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Etude-KSU-Next-beryllium
+          path: '*.zip'
