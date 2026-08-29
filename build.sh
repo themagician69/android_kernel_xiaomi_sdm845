@@ -77,12 +77,13 @@ else
 fi
 # --------------------------------
 
-# --- BYPASS GCC VERSION CHECK (XDA FIX) ---
-echo "Applying XDA patch to bypass compiler-gcc.h version lock..."
+# --- AGGRESSIVE COMPILER-GCC.H BYPASS ---
+echo "Removing GCC version restriction block..."
 if [ -f "include/linux/compiler-gcc.h" ]; then
-    sed -i 's/#error Sorry, your version of GCC is too old - please use 5.1 or newer./\/\/#error Sorry, your version of GCC is too old - please use 5.1 or newer./g' include/linux/compiler-gcc.h
+    sed -i '/__GNUC__ < 5/,/#endif/d' include/linux/compiler-gcc.h
+    sed -i '/#error Sorry, your version of GCC is too old/d' include/linux/compiler-gcc.h
 fi
-# ------------------------------------------
+# ----------------------------------------
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
