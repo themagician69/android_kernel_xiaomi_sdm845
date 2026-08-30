@@ -147,6 +147,21 @@ if "pinctrl/consumer.h" not in content:
 '
 # ----------------------------------------
 
+# --- PATCH MSM_ION.H UNUSED FUNCTION WARNING ---
+echo "Patching drivers/staging/android/ion/msm/msm_ion.h to suppress unused-function warning..."
+python3 -c '
+path = "drivers/staging/android/ion/msm/msm_ion.h"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+if "static bool is_buffer_hlos_assigned" in content and "__maybe_unused" not in content:
+    content = content.replace("static bool is_buffer_hlos_assigned", "static __maybe_unused bool is_buffer_hlos_assigned")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Patched msm_ion.h successfully.")
+'
+# -----------------------------------------------
+
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
 echo "Starting compilation using LineageOS GCC 4.9..."
