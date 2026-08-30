@@ -131,6 +131,22 @@ if "pinctrl/consumer.h" not in content:
 '
 # ----------------------------------------
 
+# --- PATCH HBTP_INPUT PINCTRL HEADER ---
+echo "Injecting pinctrl consumer header into drivers/input/misc/hbtp_input.c..."
+python3 -c '
+path = "drivers/input/misc/hbtp_input.c"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+include_str = "#include <linux/pinctrl/consumer.h>\n"
+if "pinctrl/consumer.h" not in content:
+    content = include_str + content
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Injected pinctrl header into hbtp_input.c successfully.")
+'
+# ----------------------------------------
+
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
 echo "Starting compilation using LineageOS GCC 4.9..."
