@@ -30,7 +30,9 @@ jobs:
             libelf-dev \
             pkg-config \
             flex \
-            bison
+            bison \
+            gcc-arm-linux-gnueabi \
+            binutils-arm-linux-gnueabi
 
       - name: Run Kernel Build Script
         shell: bash
