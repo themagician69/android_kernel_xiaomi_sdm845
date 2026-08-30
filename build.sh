@@ -83,7 +83,6 @@ compile_kernel() {
 
     mkdir -p out
 
-    # CRITICAL: Put /usr/bin first so arm-linux-gnueabi- prefix tools are found by the native vdso32 hardcode rule
     export PATH="/usr/bin:$CLANGDIR/bin:$PATH"
 
     make O=out ARCH=arm64 $DEFCONFIG
@@ -92,7 +91,7 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG BUILD ---
+    # --- NATIVE CLANG BUILD WITH GCC_TOOLCHAIN_DIR ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
@@ -110,7 +109,8 @@ compile_kernel() {
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+        GCC_TOOLCHAIN_DIR=/usr/bin/ 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
