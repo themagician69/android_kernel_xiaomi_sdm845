@@ -48,6 +48,33 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
+# --- APPLY UPSTREAM VDSO32 BACKPORT FIX FOR CLANG 16 ---
+echo "Applying upstream vdso32 backport fix for Clang assembler prefix..."
+python3 -c '
+import os
+path = "arch/arm64/kernel/vdso32/Makefile"
+if os.path.exists(path):
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    # The backport fix changes the prefix definition so newer Clang finds the right cross-assembler
+    target_str = "$(cc-option,--prefix=$(CC_PREFIX) --target=$(notdir $(GCC_TARGET)))\\"
+    fixed_str = "$(cc-option,--prefix=$(dir $(CROSS_COMPILE_ARM32)) --target=$(notdir $(GCC_TARGET)))\\"
+    
+    if target_str in content:
+        content = content.replace(target_str, fixed_str)
+    else:
+        # Generic fallback replacement for older/variant Makefiles
+        content = content.replace("--prefix=$(CC_PREFIX)", "--prefix=/usr/bin/arm-linux-gnueabi-")
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Successfully patched vdso32 Makefile using backport logic.")
+else:
+    print("Warning: vdso32 Makefile not found.")
+'
+# -----------------------------------------------------
+
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -91,11 +118,8 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD WITH TOOLCHAIN PATH FIX ---
+    # --- NATIVE CLANG/LLVM BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
-
-    # Find system binutils path for ARM32 cross compilation
-    ARM32_BIN_DIR="/usr/bin/"
 
     make -j$(nproc --all) O=out LLVM=1 \
         ARCH=arm64 \
@@ -113,9 +137,7 @@ compile_kernel() {
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-        GCC_TOOLCHAIN_DIR="/usr/bin/" \
-        COMPAT_GCC_TOOLCHAIN_DIR="/usr/bin/" 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
