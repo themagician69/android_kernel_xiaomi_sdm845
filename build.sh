@@ -31,7 +31,7 @@ rm -f *.zip
 
 # --- DEPENDENCY SETUP ---
 echo "Installing build prerequisites (ccache, arm cross-compilers)..."
-sudo apt-get update && sudo apt-get install -y ccache gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu
+sudo apt-get update && sudo apt-get install -y ccache gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-arm-linux-gnueabi binutils-aarch64-linux-gnu
 # ------------------------
 
 # KernelSU-Next setup
@@ -91,7 +91,7 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD ---
+    # --- NATIVE CLANG/LLVM BUILD WITH TRIPLE FIX ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
@@ -110,13 +110,16 @@ compile_kernel() {
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+        CLANG_TRIPLE=aarch64-linux-gnu- \
+        AS_ARM32=arm-linux-gnueabi-as \
+        AS_AARCH64=aarch64-linux-gnu-as 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$(($BUILD_END - $BUILD_START))
 
-    if [ $? -ne 0 ]; then
-        echo "Build failed"
+    if [ ! -f "$IMAGE" ]; then
+        echo "Build failed: Image.gz-dtb not generated."
         exit 1
     else
         echo -e "$yellow Build completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds.$nocol"
