@@ -77,7 +77,7 @@ else
 fi
 # --------------------------------
 
-# --- BULLETPROOF PYTHON COMPILER-GCC.H PATCH ---
+# --- PYTHON COMPILER-GCC.H PATCH ---
 echo "Patching include/linux/compiler-gcc.h via Python..."
 python3 -c '
 file_path = "include/linux/compiler-gcc.h"
@@ -86,7 +86,6 @@ with open(file_path, "r", encoding="utf-8") as f:
 
 new_lines = []
 for line in lines:
-    # Target the version check error line cleanly (handling spaces like "# error")
     if "version of GCC is too old" in line or "5.1 or newer" in line:
         new_lines.append("/* " + line.strip() + " */\n")
     elif "__GNUC__ < 5" in line:
@@ -98,15 +97,14 @@ with open(file_path, "w", encoding="utf-8") as f:
     f.writelines(new_lines)
 print("compiler-gcc.h patched successfully.")
 '
-# ----------------------------------------------
-# --- PATCH ADSPRPC ION FUNCTION ---
-echo "Patching drivers/char/adsprpc.c for ION compatibility..."
+# ------------------------------------
+
+# --- PATCH ADSPRPC ION DECLARATION ---
+echo "Patching drivers/char/adsprpc.c for ION import function..."
 if [ -f "drivers/char/adsprpc.c" ]; then
-    # Ensure ion header or dma-buf symbols are accessible if needed, 
-    # or resolve implicit declaration by checking how ion_import_dma_buf_fd is included.
-    sed -i '/#include "adsprpc_shared.h"/a #include <linux/dma-buf.h>' drivers/char/adsprpc.c
+    sed -i '/#include <linux\/msm_ion.h>/c\#include <linux\/msm_ion.h>\n#include "msm_ion.h"' drivers/char/adsprpc.c
 fi
-# ---------------------------------
+# -------------------------------------
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
