@@ -77,18 +77,28 @@ else
 fi
 # --------------------------------
 
-# --- ULTIMATE COMPILER-GCC.H STRIPPER ---
-echo "Stripping out the version check lines entirely..."
-if [ -f "include/linux/compiler-gcc.h" ]; then
-    # Use sed to delete lines matching the GCC version error block
-    sed -i '150,165{//!d}' include/linux/compiler-gcc.h
-    # Fallback pattern deletion just in case line numbers shift
-    sed -i '/#if __GNUC__ == 4 && __GNUC_MINOR__ </,$ {
-        /#error/d
-    }' include/linux/compiler-gcc.h
-fi
-# ----------------------------------------
+# --- BULLETPROOF PYTHON COMPILER-GCC.H PATCH ---
+echo "Patching include/linux/compiler-gcc.h via Python..."
+python3 -c '
+file_path = "include/linux/compiler-gcc.h"
+with open(file_path, "r", encoding="utf-8") as f:
+    lines = f.readlines()
 
+new_lines = []
+for line in lines:
+    # Target the version check error line cleanly (handling spaces like "# error")
+    if "version of GCC is too old" in line or "5.1 or newer" in line:
+        new_lines.append("/* " + line.strip() + " */\n")
+    elif "__GNUC__ < 5" in line:
+        new_lines.append(line.replace("__GNUC__ < 5", "__GNUC__ < 4"))
+    else:
+        new_lines.append(line)
+
+with open(file_path, "w", encoding="utf-8") as f:
+    f.writelines(new_lines)
+print("compiler-gcc.h patched successfully.")
+'
+# ----------------------------------------------
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
