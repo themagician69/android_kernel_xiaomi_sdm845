@@ -29,6 +29,11 @@ rm -rf clang
 rm -f *.zip
 # --------------------------------
 
+# --- DEPENDENCY SETUP ---
+echo "Installing build prerequisites (ccache, arm cross-compilers)..."
+sudo apt-get update && sudo apt-get install -y ccache gcc-arm-linux-gnueabi gcc-aarch64-linux-gnu
+# ------------------------
+
 # KernelSU-Next setup
 curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s v1.1.1
 
@@ -91,7 +96,7 @@ compile_kernel() {
 
     make -j$(nproc --all) O=out LLVM=1 \
         ARCH=arm64 \
-        CC="ccache clang" \
+        CC="clang" \
         LD=ld.lld \
         AR=llvm-ar \
         AS=llvm-as \
@@ -129,7 +134,6 @@ compile_kernel() {
 
 # Argument handling matching maintainer style
 if [ $# -eq 0 ]; then
-    # Default behavior if no args provided: build for beryllium with ksu config
     compile_kernel "beryllium" "mi845_defconfig" "."
 elif [ "$1" = "--all" ]; then
     compile_kernel "beryllium" "mi845_defconfig" "."
