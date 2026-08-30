@@ -48,26 +48,6 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
-# --- FETCH AND APPLY LINEAGEOS CHANGE 370501 (VDSO32 FIX) ---
-echo "Fetching and applying LineageOS vdso32 fix patch..."
-curl -sL "https://review.lineageos.org/changes/LineageOS~android_kernel_amlogic_linux-4.9~370501/revisions/current/patch?download" | base64 -d | git apply -v
-if [ $? -ne 0 ]; then
-    echo "Git apply encountered line variation, running dynamic Makefile adaptation..."
-    python3 -c '
-import os
-path = "arch/arm64/kernel/vdso32/Makefile"
-if os.path.exists(path):
-    with open(path, "r", encoding="utf-8") as f:
-        c = f.read()
-    # Replace cc-name with CC to match LineageOS 370501 logic
-    c = c.replace("cc-name", "CC")
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(c)
-    print("Fallback vdso32 Makefile adaptation applied successfully.")
-'
-fi
-# -------------------------------------------------------------
-
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -77,7 +57,7 @@ export USE_CCACHE=1
 
 # Files & Output
 IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
-echo "Cloning AnyKernel3..."
+echo "AnyKernel3..."
 git clone --depth=1 https://github.com/Legendleo90/AnyKernel3.git AnyKernel3
 
 ZIPNAME=Etude-KSU-Next-beryllium
@@ -90,7 +70,7 @@ compile_kernel() {
 
     echo "Compiling for device: $DEV with config: $CFG"
 
-    # Merge base config and device config just like the maintainer script
+    # Merge base config and device config
     cat arch/arm64/configs/vendor/xiaomi/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
@@ -111,12 +91,12 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD ---
+    # --- CLEAN NATIVE CLANG BUILD (Relying on kernel's native vdso32 fix) ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
         ARCH=arm64 \
-        CC="$CLANGDIR/bin/clang" \
+        CC="clang" \
         LD=ld.lld \
         AR=llvm-ar \
         NM=llvm-nm \
@@ -124,8 +104,8 @@ compile_kernel() {
         OBJCOPY=llvm-objcopy \
         OBJDUMP=llvm-objdump \
         READELF=llvm-readelf \
-        HOSTCC="$CLANGDIR/bin/clang" \
-        HOSTCXX="$CLANGDIR/bin/clang++" \
+        HOSTCC="clang" \
+        HOSTCXX="clang++" \
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
