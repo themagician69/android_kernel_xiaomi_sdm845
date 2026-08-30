@@ -63,6 +63,10 @@ make O=out ARCH=${ARCH} SUBARCH=${SUBARCH} sdm845-perf_defconfig
 if [ -f "arch/arm64/configs/vendor/xiaomi/beryllium.config" ]; then
     echo "Merging beryllium device-specific config..."
     ./scripts/kconfig/merge_config.sh -O out out/.config arch/arm64/configs/vendor/xiaomi/beryllium.config
+    
+    # Disable IOMMU debug to fix struct dev_archdata mapping build error
+    echo "CONFIG_IOMMU_DEBUG=n" >> out/.config
+    
     make O=out ARCH=${ARCH} SUBARCH=${SUBARCH} olddefconfig
 else
     echo "Error: arch/arm64/configs/vendor/xiaomi/beryllium.config not found!"
@@ -146,6 +150,22 @@ if "pinctrl/consumer.h" not in content:
     print("Injected pinctrl header into hbtp_input.c successfully.")
 '
 # ----------------------------------------
+
+# --- PATCH FOCALTECH CORE PINCTRL HEADER ---
+echo "Injecting pinctrl consumer header into Focaltech touchscreen core..."
+python3 -c '
+path = "drivers/input/touchscreen/focaltech_touch/focaltech_core.c"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+include_str = "#include <linux/pinctrl/consumer.h>\n"
+if "pinctrl/consumer.h" not in content:
+    content = include_str + content
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Injected pinctrl header into focaltech_core.c successfully.")
+'
+# -------------------------------------------
 
 # --- PATCH MSM_ION.H UNUSED FUNCTION WARNING ---
 echo "Patching drivers/staging/android/ion/msm/msm_ion.h to suppress unused-function warning..."
