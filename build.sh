@@ -78,7 +78,7 @@ IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 echo "Cloning AnyKernel3..."
 git clone --depth=1 https://github.com/Legendleo90/AnyKernel3.git AnyKernel3
 
-ZIPNAME=PERF_KSU
+ZIPNAME=Etude-KSU-Next-beryllium
 FINAL_ZIP=${ZIPNAME}-${DEVICE}.zip
 
 compile_kernel() {
@@ -88,7 +88,7 @@ compile_kernel() {
 
     echo "Compiling for device: $DEV with config: $CFG"
 
-    # Merge base config from vendor/ and device config from vendor/xiaomi/
+    # Merge base config and device config
     cat arch/arm64/configs/vendor/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
