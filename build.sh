@@ -167,6 +167,22 @@ if "pinctrl/consumer.h" not in content:
 '
 # -------------------------------------------
 
+# --- PATCH NT36XXX TOUCHSCREEN PINCTRL HEADER ---
+echo "Injecting pinctrl consumer header into NT36XXX touchscreen driver..."
+python3 -c '
+path = "drivers/input/touchscreen/nt36xxx/nt36xxx.c"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+include_str = "#include <linux/pinctrl/consumer.h>\n"
+if "pinctrl/consumer.h" not in content:
+    content = include_str + content
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Injected pinctrl header into nt36xxx.c successfully.")
+'
+# ----------------------------------------------
+
 # --- PATCH MSM_ION.H UNUSED FUNCTION WARNING ---
 echo "Patching drivers/staging/android/ion/msm/msm_ion.h to suppress unused-function warning..."
 python3 -c '
