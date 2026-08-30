@@ -2,7 +2,6 @@
 
 print_help() {
     echo "Usage: $0 [device] [options]"
-    echo "Remove out directory if compiling for a different device"
     echo
     echo "Device:"
     echo "  --beryllium    Compile kernel for beryllium (POCO F1)"
@@ -20,14 +19,6 @@ echo -e "**                                             **"
 echo -e "** Building Etude-KSU via Prelude-Clang        **"
 echo -e "**                                             **"
 echo -e "*************************************************"
-
-# --- CLEAN PREVIOUS ARTIFACTS ---
-echo "Cleaning up previous build artifacts..."
-rm -rf out
-rm -rf AnyKernel3
-rm -rf clang
-rm -f *.zip
-# --------------------------------
 
 # --- DEPENDENCY SETUP ---
 echo "Installing build prerequisites (ccache, arm cross-compilers)..."
@@ -78,7 +69,7 @@ IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 echo "Cloning AnyKernel3..."
 git clone --depth=1 https://github.com/Legendleo90/AnyKernel3.git AnyKernel3
 
-ZIPNAME=Etude-KSU-Next-beryllium
+ZIPNAME=PERF_KSU
 FINAL_ZIP=${ZIPNAME}-${DEVICE}.zip
 
 compile_kernel() {
@@ -88,8 +79,8 @@ compile_kernel() {
 
     echo "Compiling for device: $DEV with config: $CFG"
 
-    # Merge base config and device config
-    cat arch/arm64/configs/vendor/xiaomi/$CFG \
+    # Merge base config (sdm845-perf_defconfig) and device config
+    cat arch/arm64/configs/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
 
@@ -151,13 +142,13 @@ compile_kernel() {
 
 # Argument handling matching maintainer style
 if [ $# -eq 0 ]; then
-    compile_kernel "beryllium" "mi845_defconfig" "."
+    compile_kernel "beryllium" "sdm845-perf_defconfig" "."
 elif [ "$1" = "--all" ]; then
-    compile_kernel "beryllium" "mi845_defconfig" "."
+    compile_kernel "beryllium" "sdm845-perf_defconfig" "."
 else
     case "$1" in
         --beryllium)
-            compile_kernel "beryllium" "mi845_defconfig" "."
+            compile_kernel "beryllium" "sdm845-perf_defconfig" "."
             ;;
         --help)
             print_help
