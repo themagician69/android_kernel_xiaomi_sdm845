@@ -74,6 +74,9 @@ compile_kernel() {
     cat arch/arm64/configs/vendor/xiaomi/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
+    
+    # Disable VDSO32 to prevent Clang 16 -EL assembler crash
+    echo "CONFIG_VDSO32=n" >> arch/arm64/configs/generated_defconfig
 
     DEFCONFIG="generated_defconfig"
 
@@ -91,7 +94,7 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD WITH EXPLICIT 32-BIT BINUTILS PATHS ---
+    # --- NATIVE CLANG/LLVM BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
@@ -110,10 +113,7 @@ compile_kernel() {
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-        CROSS_COMPILE_COMPAT=aarch64-linux-gnu- \
-        AS=arm-linux-gnueabi-as \
-        LD_LIBRARY_PATH="$CLANGDIR/lib:$LD_LIBRARY_PATH" 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
