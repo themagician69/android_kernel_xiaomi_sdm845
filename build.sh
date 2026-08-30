@@ -88,8 +88,8 @@ compile_kernel() {
 
     echo "Compiling for device: $DEV with config: $CFG"
 
-    # Merge base config from vendor/ (symlink) and device config from vendor/xiaomi/
-    cat arch/arm64/configs/vendor/$CFG \
+    # Merge base config and device config
+    cat arch/arm64/configs/vendor/xiaomi/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
 
@@ -149,15 +149,15 @@ compile_kernel() {
     echo "Flashable zip created: ${FINAL_ZIP}"
 }
 
-# Argument handling passing the correct perf symlink config
+# Argument handling matching maintainer style
 if [ $# -eq 0 ]; then
-    compile_kernel "beryllium" "sdm845-perf_defconfig" "."
+    compile_kernel "beryllium" "mi845_defconfig" "."
 elif [ "$1" = "--all" ]; then
-    compile_kernel "beryllium" "sdm845-perf_defconfig" "."
+    compile_kernel "beryllium" "mi845_defconfig" "."
 else
     case "$1" in
         --beryllium)
-            compile_kernel "beryllium" "sdm845-perf_defconfig" "."
+            compile_kernel "beryllium" "mi845_defconfig" "."
             ;;
         --help)
             print_help
