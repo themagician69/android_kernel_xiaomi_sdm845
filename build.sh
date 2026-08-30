@@ -57,7 +57,7 @@ export USE_CCACHE=1
 
 # Files & Output
 IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
-echo "AnyKernel3..."
+echo "Cloning AnyKernel3..."
 git clone --depth=1 https://github.com/Legendleo90/AnyKernel3.git AnyKernel3
 
 ZIPNAME=Etude-KSU-Next-beryllium
@@ -83,7 +83,8 @@ compile_kernel() {
 
     mkdir -p out
 
-    export PATH="$CLANGDIR/bin:$PATH"
+    # CRITICAL: Put /usr/bin first so arm-linux-gnueabi- prefix tools are found by the native vdso32 hardcode rule
+    export PATH="/usr/bin:$CLANGDIR/bin:$PATH"
 
     make O=out ARCH=arm64 $DEFCONFIG
 
@@ -91,7 +92,7 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- CLEAN NATIVE CLANG BUILD (Relying on kernel's native vdso32 fix) ---
+    # --- NATIVE CLANG BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
