@@ -48,35 +48,6 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
-# --- ROBUST VDSO32 MAKEFILE FIX FOR CLANG 16 ---
-echo "Applying dynamic vdso32 fix for Clang assembler path..."
-python3 -c '
-path = "arch/arm64/kernel/vdso32/Makefile"
-if open(path):
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-
-    new_lines = []
-    patched = False
-    for line in lines:
-        if "GCC_TARGET :=" in line or ("--target=" in line and "elf32-arm" in line):
-            new_lines.append("GCC_TARGET := $(call cc-option,--target=arm-linux-gnueabi,)\n")
-            patched = True
-        else:
-            new_lines.append(line)
-
-    with open(path, "w", encoding="utf-8") as f:
-        f.writelines(new_lines)
-
-    if patched:
-        print("vdso32 Makefile successfully patched.")
-    else:
-        print("Target line for vdso32 not found exactly, appending fallback override.")
-        with open(path, "a", encoding="utf-8") as f:
-            f.write("\nGCC_TARGET := --target=arm-linux-gnueabi\n")
-'
-# -----------------------------------------------
-
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -112,7 +83,8 @@ compile_kernel() {
 
     mkdir -p out
 
-    export PATH="$CLANGDIR/bin:$PATH"
+    # Ensure system arm-linux-gnueabi binutils path takes precedence for 32-bit assembler tasks
+    export PATH="/usr/bin:$CLANGDIR/bin:$PATH"
 
     make O=out ARCH=arm64 $DEFCONFIG
 
@@ -120,7 +92,7 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD ---
+    # --- NATIVE CLANG/LLVM BUILD WITH EXPLICIT ARM32 ASSEMBLER OVERRIDE ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
@@ -128,7 +100,7 @@ compile_kernel() {
         CC="clang" \
         LD=ld.lld \
         AR=llvm-ar \
-        AS=llvm-as \
+        AS=arm-linux-gnueabi-as \
         NM=llvm-nm \
         STRIP=llvm-strip \
         OBJCOPY=llvm-objcopy \
