@@ -2,6 +2,7 @@
 
 print_help() {
     echo "Usage: $0 [device] [options]"
+    echo "Remove out directory if compiling for a different device"
     echo
     echo "Device:"
     echo "  --beryllium    Compile kernel for beryllium (POCO F1)"
@@ -19,6 +20,14 @@ echo -e "**                                             **"
 echo -e "** Building Etude-KSU via Prelude-Clang        **"
 echo -e "**                                             **"
 echo -e "*************************************************"
+
+# --- CLEAN PREVIOUS ARTIFACTS (CRUCIAL FOR CORRECT SIZES) ---
+echo "Cleaning up previous build artifacts and old configs..."
+rm -rf out
+rm -rf AnyKernel3
+rm -rf clang
+rm -f *.zip
+# -----------------------------------------------------------
 
 # --- DEPENDENCY SETUP ---
 echo "Installing build prerequisites (ccache, arm cross-compilers)..."
@@ -79,7 +88,7 @@ compile_kernel() {
 
     echo "Compiling for device: $DEV with config: $CFG"
 
-    # Merge base config (sdm845-perf_defconfig) and device config
+    # Merge base config (sdm845-perf_defconfig) and device config cleanly from scratch
     cat arch/arm64/configs/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
