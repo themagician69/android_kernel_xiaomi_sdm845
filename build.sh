@@ -93,6 +93,24 @@ compile_kernel() {
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
 
+    # --- CLEANLY PURGE OLD CONFLICTING HZ & PERF CONFIGS ---
+    echo "Sanitizing config (removing old HZ and localversion settings)..."
+    sed -i '/CONFIG_HZ=/d' arch/arm64/configs/generated_defconfig
+    sed -i '/CONFIG_HZ_[0-9]\+/d' arch/arm64/configs/generated_defconfig
+    sed -i '/CONFIG_LOCALVERSION/d' arch/arm64/configs/generated_defconfig
+
+    # --- INJECT CLEAN PERF, NO-DEBUG & 300HZ OVERRIDES ---
+    echo "Injecting performance profile, debug overrides, and 300Hz timer tweaks..."
+    cat << 'EOF' >> arch/arm64/configs/generated_defconfig
+
+# --- CUSTOM PERF & 300HZ OVERRIDES ---
+CONFIG_LOCALVERSION="-perf"
+# CONFIG_SLUB_DEBUG is not set
+# CONFIG_DEBUG_PREEMPT is not set
+CONFIG_HZ_300=y
+CONFIG_HZ=300
+EOF
+
     DEFCONFIG="generated_defconfig"
 
     if [ -f out/compile.log ]; then
