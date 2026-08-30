@@ -48,6 +48,26 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
+# --- FETCH AND APPLY LINEAGEOS CHANGE 370501 (VDSO32 FIX) ---
+echo "Fetching and applying LineageOS vdso32 fix patch..."
+curl -sL "https://review.lineageos.org/changes/LineageOS~android_kernel_amlogic_linux-4.9~370501/revisions/current/patch?download" | base64 -d | git apply -v
+if [ $? -ne 0 ]; then
+    echo "Git apply encountered line variation, running dynamic Makefile adaptation..."
+    python3 -c '
+import os
+path = "arch/arm64/kernel/vdso32/Makefile"
+if os.path.exists(path):
+    with open(path, "r", encoding="utf-8") as f:
+        c = f.read()
+    # Replace cc-name with CC to match LineageOS 370501 logic
+    c = c.replace("cc-name", "CC")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(c)
+    print("Fallback vdso32 Makefile adaptation applied successfully.")
+'
+fi
+# -------------------------------------------------------------
+
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -91,11 +111,9 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD (LINEAGEOS VDSO32 ALIGNED) ---
+    # --- NATIVE CLANG/LLVM BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
-    # Passing explicit absolute paths for CC and GCC toolchain options 
-    # to satisfy the vdso32 Makefile requirements on Clang 16.
     make -j$(nproc --all) O=out LLVM=1 \
         ARCH=arm64 \
         CC="$CLANGDIR/bin/clang" \
@@ -111,8 +129,7 @@ compile_kernel() {
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-        CC_PREFIX=/usr/bin/arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
