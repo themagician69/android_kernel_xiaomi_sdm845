@@ -48,29 +48,34 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
-# --- APPLY UPSTREAM VDSO32 FIX COMMIT DIRECTLY ---
-echo "Applying official upstream vdso32 fix commit via patch..."
-git apply << 'EOF'
-diff --git a/arch/arm64/kernel/vdso32/Makefile b/arch/arm64/kernel/vdso32/Makefile
-index c4d5885..5a2e50d 100644
---- a/arch/arm64/kernel/vdso32/Makefile
-+++ b/arch/arm64/kernel/vdso32/Makefile
-@@ -10,7 +10,7 @@ VDSO_LDFLAGS += -shared -soname=linux-vdso.so.1
- VDSO_LDFLAGS += --hash-style=sysv --build-id=sha1
- VDSO_LDFLAGS += $(call ld-option, --eh-frame-hdr)
- 
--GCC_TARGET := $(call cc-option,--target=$(notdir $(CROSS_COMPILE_ARM32))elf32-arm,)
-+GCC_TARGET := $(call cc-option,--target=arm-linux-gnueabi,)
- 
- ifdef CONFIG_CC_IS_CLANG
- ifdef CROSS_COMPILE_ARM32
-EOF
-if [ $? -eq 0 ]; then
-    echo "Upstream vdso32 fix applied successfully."
-else
-    echo "Notice: Git patch already applied or skipped, continuing..."
-fi
-# ------------------------------------------------
+# --- ROBUST VDSO32 MAKEFILE FIX FOR CLANG 16 ---
+echo "Applying dynamic vdso32 fix for Clang assembler path..."
+python3 -c '
+path = "arch/arm64/kernel/vdso32/Makefile"
+if open(path):
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    new_lines = []
+    patched = False
+    for line in lines:
+        if "GCC_TARGET :=" in line or ("--target=" in line and "elf32-arm" in line):
+            new_lines.append("GCC_TARGET := $(call cc-option,--target=arm-linux-gnueabi,)\n")
+            patched = True
+        else:
+            new_lines.append(line)
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
+
+    if patched:
+        print("vdso32 Makefile successfully patched.")
+    else:
+        print("Target line for vdso32 not found exactly, appending fallback override.")
+        with open(path, "a", encoding="utf-8") as f:
+            f.write("\nGCC_TARGET := --target=arm-linux-gnueabi\n")
+'
+# -----------------------------------------------
 
 # Stock Masking Overrides
 rm -f localversion*
