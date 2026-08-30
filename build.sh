@@ -83,8 +83,7 @@ compile_kernel() {
 
     mkdir -p out
 
-    # Ensure system arm-linux-gnueabi binutils path takes precedence for 32-bit assembler tasks
-    export PATH="/usr/bin:$CLANGDIR/bin:$PATH"
+    export PATH="$CLANGDIR/bin:$PATH"
 
     make O=out ARCH=arm64 $DEFCONFIG
 
@@ -92,26 +91,28 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD WITH EXPLICIT ARM32 ASSEMBLER OVERRIDE ---
+    # --- NATIVE CLANG/LLVM BUILD (LINEAGEOS VDSO32 ALIGNED) ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
+    # Passing explicit absolute paths for CC and GCC toolchain options 
+    # to satisfy the vdso32 Makefile requirements on Clang 16.
     make -j$(nproc --all) O=out LLVM=1 \
         ARCH=arm64 \
-        CC="clang" \
+        CC="$CLANGDIR/bin/clang" \
         LD=ld.lld \
         AR=llvm-ar \
-        AS=arm-linux-gnueabi-as \
         NM=llvm-nm \
         STRIP=llvm-strip \
         OBJCOPY=llvm-objcopy \
         OBJDUMP=llvm-objdump \
         READELF=llvm-readelf \
-        HOSTCC=clang \
-        HOSTCXX=clang++ \
+        HOSTCC="$CLANGDIR/bin/clang" \
+        HOSTCXX="$CLANGDIR/bin/clang++" \
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+        CC_PREFIX=/usr/bin/arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
