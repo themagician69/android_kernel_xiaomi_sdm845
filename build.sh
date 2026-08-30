@@ -115,6 +115,22 @@ if "ion_import_dma_buf_fd" in content and "struct ion_handle *ion_import_dma_buf
 '
 # ---------------------------------
 
+# --- PATCH EXTCON-GPIO PINCTRL HEADER ---
+echo "Injecting pinctrl consumer header into drivers/extcon/extcon-gpio.c..."
+python3 -c '
+path = "drivers/extcon/extcon-gpio.c"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+include_str = "#include <linux/pinctrl/consumer.h>\n"
+if "pinctrl/consumer.h" not in content:
+    content = include_str + content
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Injected pinctrl header successfully.")
+'
+# ----------------------------------------
+
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
 echo "Starting compilation using LineageOS GCC 4.9..."
