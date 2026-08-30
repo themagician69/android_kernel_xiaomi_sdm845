@@ -48,6 +48,24 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
+# --- PATCH VDSO32 MAKEFILE FOR CLANG PREFIX ---
+echo "Patching arch/arm64/kernel/vdso32/Makefile to fix cross-assembler fallback..."
+python3 -c '
+path = "arch/arm64/kernel/vdso32/Makefile"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+# Fix the cross compiler prefix resolution for vdso32 under newer clang versions
+if "notmuch" in content or "cc-option" in content or "CROSS_COMPILE" in content:
+    # Ensure the 32-bit cross compile prefix explicitly points to arm-linux-gnueabi-
+    content = content.replace("$(CC)", "arm-linux-gnueabi-gcc")
+
+with open(path, "w", encoding="utf-8") as f:
+    f.write(content)
+print("vdso32 Makefile patched successfully.")
+'
+# ---------------------------------------------
+
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -74,9 +92,6 @@ compile_kernel() {
     cat arch/arm64/configs/vendor/xiaomi/$CFG \
         arch/arm64/configs/vendor/xiaomi/$DEV.config \
         > arch/arm64/configs/generated_defconfig
-    
-    # Disable VDSO32 to prevent Clang 16 -EL assembler crash
-    echo "CONFIG_VDSO32=n" >> arch/arm64/configs/generated_defconfig
 
     DEFCONFIG="generated_defconfig"
 
