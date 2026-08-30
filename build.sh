@@ -48,32 +48,29 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
-# --- APPLY UPSTREAM VDSO32 BACKPORT FIX FOR CLANG 16 ---
-echo "Applying upstream vdso32 backport fix for Clang assembler prefix..."
-python3 -c '
-import os
-path = "arch/arm64/kernel/vdso32/Makefile"
-if os.path.exists(path):
-    with open(path, "r", encoding="utf-8") as f:
-        content = f.read()
-    
-    # The backport fix changes the prefix definition so newer Clang finds the right cross-assembler
-    target_str = "$(cc-option,--prefix=$(CC_PREFIX) --target=$(notdir $(GCC_TARGET)))\\"
-    fixed_str = "$(cc-option,--prefix=$(dir $(CROSS_COMPILE_ARM32)) --target=$(notdir $(GCC_TARGET)))\\"
-    
-    if target_str in content:
-        content = content.replace(target_str, fixed_str)
-    else:
-        # Generic fallback replacement for older/variant Makefiles
-        content = content.replace("--prefix=$(CC_PREFIX)", "--prefix=/usr/bin/arm-linux-gnueabi-")
-
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(content)
-    print("Successfully patched vdso32 Makefile using backport logic.")
-else:
-    print("Warning: vdso32 Makefile not found.")
-'
-# -----------------------------------------------------
+# --- APPLY UPSTREAM VDSO32 FIX COMMIT DIRECTLY ---
+echo "Applying official upstream vdso32 fix commit via patch..."
+git apply << 'EOF'
+diff --git a/arch/arm64/kernel/vdso32/Makefile b/arch/arm64/kernel/vdso32/Makefile
+index c4d5885..5a2e50d 100644
+--- a/arch/arm64/kernel/vdso32/Makefile
++++ b/arch/arm64/kernel/vdso32/Makefile
+@@ -10,7 +10,7 @@ VDSO_LDFLAGS += -shared -soname=linux-vdso.so.1
+ VDSO_LDFLAGS += --hash-style=sysv --build-id=sha1
+ VDSO_LDFLAGS += $(call ld-option, --eh-frame-hdr)
+ 
+-GCC_TARGET := $(call cc-option,--target=$(notdir $(CROSS_COMPILE_ARM32))elf32-arm,)
++GCC_TARGET := $(call cc-option,--target=arm-linux-gnueabi,)
+ 
+ ifdef CONFIG_CC_IS_CLANG
+ ifdef CROSS_COMPILE_ARM32
+EOF
+if [ $? -eq 0 ]; then
+    echo "Upstream vdso32 fix applied successfully."
+else
+    echo "Notice: Git patch already applied or skipped, continuing..."
+fi
+# ------------------------------------------------
 
 # Stock Masking Overrides
 rm -f localversion*
