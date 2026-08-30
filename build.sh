@@ -48,6 +48,22 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
+# --- FIX: DROP -no-integrated-as FROM VDSO32 ---
+# Allows Clang 16 to use its internal assembler and ignore /usr/bin/as completely!
+echo "Removing -no-integrated-as to allow modern Clang IAS..."
+python3 -c '
+import os
+path = "arch/arm64/kernel/vdso32/Makefile"
+if os.path.exists(path):
+    with open(path, "r", encoding="utf-8") as f:
+        c = f.read()
+    c = c.replace("-no-integrated-as", "")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(c)
+    print("Successfully patched out -no-integrated-as!")
+'
+# -----------------------------------------------
+
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -83,7 +99,7 @@ compile_kernel() {
 
     mkdir -p out
 
-    export PATH="/usr/bin:$CLANGDIR/bin:$PATH"
+    export PATH="$CLANGDIR/bin:$PATH"
 
     make O=out ARCH=arm64 $DEFCONFIG
 
@@ -91,10 +107,11 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG BUILD WITH GCC_TOOLCHAIN_DIR ---
+    # --- NATIVE CLANG BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
-    make -j$(nproc --all) O=out LLVM=1 \
+    # LLVM_IAS=1 strictly enables the Integrated Assembler across the build
+    make -j$(nproc --all) O=out LLVM=1 LLVM_IAS=1 \
         ARCH=arm64 \
         CC="clang" \
         LD=ld.lld \
@@ -109,8 +126,7 @@ compile_kernel() {
         HOSTAR=llvm-ar \
         HOSTLD=ld.lld \
         CROSS_COMPILE=aarch64-linux-gnu- \
-        CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-        GCC_TOOLCHAIN_DIR=/usr/bin/ 2>&1 | tee -a out/compile.log
+        CROSS_COMPILE_ARM32=arm-linux-gnueabi- 2>&1 | tee -a out/compile.log
 
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
