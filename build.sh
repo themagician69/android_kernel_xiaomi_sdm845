@@ -99,6 +99,14 @@ with open(file_path, "w", encoding="utf-8") as f:
 print("compiler-gcc.h patched successfully.")
 '
 # ----------------------------------------------
+# --- PATCH ADSPRPC ION FUNCTION ---
+echo "Patching drivers/char/adsprpc.c for ION compatibility..."
+if [ -f "drivers/char/adsprpc.c" ]; then
+    # Ensure ion header or dma-buf symbols are accessible if needed, 
+    # or resolve implicit declaration by checking how ion_import_dma_buf_fd is included.
+    sed -i '/#include "adsprpc_shared.h"/a #include <linux/dma-buf.h>' drivers/char/adsprpc.c
+fi
+# ---------------------------------
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
