@@ -48,19 +48,21 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
-# --- FIX: DROP -no-integrated-as FROM VDSO32 ---
-# Allows Clang 16 to use its internal assembler and ignore /usr/bin/as completely!
-echo "Removing -no-integrated-as to allow modern Clang IAS..."
+# --- FIX: PATCH VDSO32 FOR CLANG/LLD COMPATIBILITY ---
+echo "Patching arch/arm64/kernel/vdso32/Makefile for modern Clang/LLD..."
 python3 -c '
 import os
 path = "arch/arm64/kernel/vdso32/Makefile"
 if os.path.exists(path):
     with open(path, "r", encoding="utf-8") as f:
         c = f.read()
+    # Remove -no-integrated-as
     c = c.replace("-no-integrated-as", "")
+    # Force lld linker for vdso32 if it uses system ld
+    c = c.replace("CC_ARM32 := $(CC)", "CC_ARM32 := $(CC) -fuse-ld=lld")
     with open(path, "w", encoding="utf-8") as f:
         f.write(c)
-    print("Successfully patched out -no-integrated-as!")
+    print("Successfully patched vdso32 Makefile!")
 '
 # -----------------------------------------------
 
@@ -110,7 +112,6 @@ compile_kernel() {
     # --- NATIVE CLANG BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
-    # LLVM_IAS=1 strictly enables the Integrated Assembler across the build
     make -j$(nproc --all) O=out LLVM=1 LLVM_IAS=1 \
         ARCH=arm64 \
         CC="clang" \
