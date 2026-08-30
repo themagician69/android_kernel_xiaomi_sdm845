@@ -48,6 +48,28 @@ git clone -b master https://gitlab.com/jjpprrrr/prelude-clang.git --depth=1 clan
 CLANGDIR="${KERNEL_DIR}/clang"
 # --------------------------------------
 
+# --- PERMANENT VDSO32 CLANG FIX ---
+echo "Applying vdso32 cross-compiler prefix patch for Clang 16..."
+python3 -c '
+import os
+path = "arch/arm64/kernel/vdso32/Makefile"
+if os.path.exists(path):
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    # Fix the cross compilation prefix lookup for vdso32 assembler
+    old_target = "$(filter-out $(ARCH),$(SUBARCH))"
+    if "CROSS_COMPILE_ARM32" in content:
+        content = content.replace("$(CROSS_COMPILE_ARM32)", "arm-linux-gnueabi-")
+        
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("vdso32 Makefile fixed successfully.")
+else:
+    print("vdso32 Makefile not found, skipping patch.")
+'
+# -----------------------------------
+
 # Stock Masking Overrides
 rm -f localversion*
 touch localversion
@@ -91,7 +113,7 @@ compile_kernel() {
     yellow='\033[0;33m'
     nocol='\033[0m'
 
-    # --- NATIVE CLANG/LLVM BUILD WITH CLANG_TRIPLE FIX ---
+    # --- NATIVE CLANG/LLVM BUILD ---
     echo "Starting compilation using Prelude-Clang with LLVM=1..."
 
     make -j$(nproc --all) O=out LLVM=1 \
