@@ -99,12 +99,21 @@ print("compiler-gcc.h patched successfully.")
 '
 # ------------------------------------
 
-# --- PATCH ADSPRPC ION DECLARATION ---
-echo "Patching drivers/char/adsprpc.c for ION import function..."
-if [ -f "drivers/char/adsprpc.c" ]; then
-    sed -i '/#include <linux\/msm_ion.h>/c\#include <linux\/msm_ion.h>\n#include <drivers/staging/android/ion/msm/msm_ion.h>' drivers/char/adsprpc.c
-fi
-# -------------------------------------
+# --- PATCH ADSPRPC PROTOTYPE ---
+echo "Injecting forward declaration for ion_import_dma_buf_fd into drivers/char/adsprpc.c..."
+python3 -c '
+path = "drivers/char/adsprpc.c"
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+
+declaration = "\nstruct ion_client;\nstruct ion_handle *ion_import_dma_buf_fd(struct ion_client *client, int fd);\n"
+if "ion_import_dma_buf_fd" in content and "struct ion_handle *ion_import_dma_buf_fd" not in content:
+    content = declaration + content
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Injected forward declaration successfully.")
+'
+# ---------------------------------
 
 # --- NATIVE GCC BUILD FUNCTION ---
 Build_GCC () {
